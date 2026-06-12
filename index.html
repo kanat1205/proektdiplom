@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Цифровая грамотность / Digital Literacy</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(270deg, #4facfe, #00f2fe, #a18cd1, #fbc2eb);
+      background-size: 800% 800%;
+      animation: gradientMove 12s ease infinite;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      overflow: hidden;
+      transition: background 0.5s ease;
+    }
+
+    @keyframes gradientMove {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    body.game-over-flash { background: #c0392b !important; }
+
+    .game {
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      width: 420px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      text-align: center;
+      transition: all 0.3s ease;
+      position: relative;
+      display: none;
+    }
+
+    /* Адаптивная широкая админка */
+    .game.admin-wide {
+      width: 92%;
+      max-width: 1100px;
+      text-align: left;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .game-progress-container {
+      width: 100%;
+      height: 8px;
+      background: #e0e0e0;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+    .game-progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #4facfe, #00f2fe);
+      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .correct-flash { background-color: #d4edda !important; transform: scale(1.02); }
+    .wrong-flash { background-color: #f8d7da !important; animation: shake 0.3s ease-in-out; }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+
+    /* АНИМАЦИЯ ПОРАЖЕНИЯ */
+    .epic-game-over { 
+      animation: destroyCard 0.8s forwards ease-in-out !important; 
+    }
+    @keyframes destroyCard {
+      0% { transform: scale(1) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) scale(0.5) rotate(15deg); opacity: 0; }
+    }
+
+    .victory-card {
+      background: linear-gradient(135deg, #ffe259, #ffa751) !important;
+      color: #333;
+      border: 3px solid #ffd700;
+    }
+    .victory-trophy {
+      font-size: 64px;
+      margin-bottom: 10px;
+      animation: trophyPulse 1.5s infinite alternate ease-in-out;
+      display: inline-block;
+    }
+    @keyframes trophyPulse {
+      0% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(255,215,0,0.4)); }
+      100% { transform: scale(1.15); filter: drop-shadow(0 0 20px rgba(255,215,0,0.8)); }
+    }
+
+    .info-box {
+      margin-top: 15px;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.4;
+      display: none;
+    }
+    .info-box.correct { background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; }
+    .info-box.wrong { background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7; }
+
+    input[type="text"], input[type="password"], select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px;
+      margin-bottom: 15px;
+      border: 2px solid #4facfe;
+      border-radius: 8px;
+      font-size: 16px;
+      outline: none;
+    }
+    
+    input[type="text"].nick-input {
+      text-align: center;
+      width: 90%;
+    }
+
+    .admin-auth-fields input {
+      padding: 10px;
+      font-size: 14px;
+      margin-bottom: 8px;
+      border: 2px solid #e67e22;
+    }
+
+    /* Контейнер для поля пароля с кнопкой-глазом */
+    .password-wrapper {
+      position: relative;
+      width: 100%;
+    }
+    .password-wrapper input {
+      padding-right: 45px !important;
+    }
+    .toggle-password-btn {
+      position: absolute;
+      right: 10px;
+      top: 40%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 0;
+      margin: 0;
+      width: auto;
+      display: inline-block;
+      user-select: none;
+    }
+
+    button {
+      display: block;
+      margin: 10px auto;
+      padding: 12px;
+      width: 100%;
+      border: none;
+      border-radius: 8px;
+      background: #4facfe;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.2s ease;
+    }
+    button:hover { background: #007bff; transform: scale(1.01); }
+    button:active { transform: scale(0.98); }
+    button.fade-out-btn { opacity: 0.25; pointer-events: none; }
+
+    button.lang-btn { background: #34495e; }
+    button.lang-btn:hover { background: #2c3e50; }
+    button.easy-btn { background: #2ecc71; }
+    button.easy-btn:hover { background: #27ae60; }
+    button.hard-btn { background: #e67e22; }
+    button.hard-btn:hover { background: #d35400; }
+    button.next-btn { background: #2ecc71; display: none; }
+    
+    button.back-btn { background: #7f8c8d; margin-top: 15px; }
+    button.back-btn:hover { background: #95a5a6; }
+
+    button.surrender-btn { background: #e74c3c; margin-top: 15px; font-size: 14px; padding: 10px; }
+    button.surrender-btn:hover { background: #c0392b; }
+
+    /* Стили админки */
+    .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+    .admin-card { background: #f8f9fa; border: 1px solid #e2e8f0; border-radius: 10px; padding: 15px; }
+    .admin-card h3 { margin-top: 0; color: #2c3e50; border-bottom: 2px solid #4facfe; padding-bottom: 5px; font-size: 16px;}
+    .stats-flex { display: flex; justify-content: space-around; text-align: center; margin-bottom: 15px; }
+    .stat-number { font-size: 24px; font-weight: bold; color: #007bff; }
+    
+    .console-log {
+      background: #1e1e1e; color: #39ff14; font-family: monospace; padding: 10px;
+      border-radius: 6px; height: 120px; overflow-y: auto; font-size: 11px; line-height: 1.4;
+    }
+    
+    .q-list-item {
+      display: flex; justify-content: space-between; background: #fff; padding: 8px;
+      margin-bottom: 6px; border-radius: 4px; border-left: 3px solid #4facfe; font-size: 13px; align-items: center;
+    }
+    .q-list-container { max-height: 150px; overflow-y: auto; }
+    .btn-danger { background: #e74c3c; width: auto; margin: 0; padding: 4px 8px; font-size: 12px;}
+    .btn-danger:hover { background: #c0392b; }
+    .btn-success { background: #2ecc71; margin-top: 5px; }
+    .btn-warning { background: #f1c40f; color: #333; margin-top: 5px; }
+    .btn-warning:hover { background: #d4ac0d; }
+
+    .inline-actions { display: flex; gap: 10px; margin-top: 5px; }
+    .inline-actions button { margin: 0; padding: 6px; font-size: 12px; }
+
+    .status-bar { display: flex; justify-content: space-between; align-items: center; font-size: 16px; font-weight: bold; margin-bottom: 10px; color: #333; }
+    .hearts span { display: inline-block; color: #e74c3c; font-size: 20px; transition: all 0.3s; }
+    .hearts.panic span { animation: heartBeat 0.6s infinite alternate ease-in-out; }
+    @keyframes heartBeat { 0% { transform: scale(1); } 100% { transform: scale(1.3); } }
+    .hearts span.broken { animation: heartBreak 0.5s forwards; }
+    @keyframes heartBreak { 0% { opacity: 1; } 100% { transform: translateY(10px) scale(0); opacity: 0; } }
+
+    .timer-bar-container { width: 100%; height: 5px; background: #eee; border-radius: 3px; margin-bottom: 15px; overflow: hidden; }
+    .timer-bar { width: 100%; height: 100%; background: #2ecc71; transition: width 1s linear, background-color 0.5s ease; }
+    .author-badge { font-size: 11px; color: #7f8c8d; text-align: right; margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 5px; }
+  </style>
+</head>
+<body>
+
+<div class="game" id="langScreen" style="display: block;">
+  <h2 id="mainSecretHeader" ondblclick="revealSecretAdmin()" style="cursor: default; user-select: none;">Цифровая грамотность</h2>
+  <p>Введите ваш никнейм / Enter your nickname:</p>
+  <input type="text" id="nicknameInput" class="nick-input" placeholder="Имя студента" value="Дипломник" maxlength="15">
+  
+  <div id="secretRoleBlock" style="display: none; margin: 15px 0; padding: 12px; border: 2px dashed #e67e22; background: #fffcf4; border-radius: 8px;">
+    <p style="margin: 0 0 8px 0; font-weight: bold; color: #e67e22;">🔑 Выбор режима доступа:</p>
+    <div style="display: flex; justify-content: center; gap: 20px; margin-bottom: 10px;">
+      <label style="cursor: pointer;"><input type="radio" name="userRole" value="student" checked onchange="toggleAuthFields()"> Учащийся</label>
+      <label style="cursor: pointer;"><input type="radio" name="userRole" value="admin" onchange="toggleAuthFields()"> Админ</label>
+    </div>
+    
+    <div id="adminAuthInputs" style="display: none; margin-top: 10px;">
+      <input type="text" id="adminLoginInput" placeholder="Логин (Login)" autocomplete="off" style="margin-bottom: 8px; padding: 8px; font-size: 14px;">
+      <div class="password-wrapper">
+        <input type="password" id="adminPasswordInput" placeholder="Пароль (Password)" style="margin-bottom: 4px; padding: 8px; font-size: 14px;">
+        <button type="button" class="toggle-password-btn" onclick="togglePasswordVisibility()">👁️</button>
+      </div>
+      <div id="authErrorMsg" style="color: #e74c3c; font-size: 12px; font-weight: bold; margin-top: 4px; text-align: center; display: none;"></div>
+    </div>
+  </div>
+
+  <p>Выберите язык интерфейса:</p>
+  <button class="lang-btn" onclick="selectLanguage('ru')">Русский язык</button>
+  <button class="lang-btn" onclick="selectLanguage('en')">English</button>
+  <div class="author-badge">Разработано студентом: Утегенов К.Т. | Группа: ПО-32</div>
+</div>
+
+<div class="game admin-wide" id="adminScreen">
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <h2>🛠 Модуль Администратора & Мониторинга Системы (Root v2)</h2>
+    <button class="lang-btn" onclick="exitAdminToMain()" style="width: auto; margin: 0; padding: 8px 15px;">← Выйти в меню</button>
+  </div>
+  
+  <div class="admin-grid">
+    <div>
+      <div class="admin-card" style="margin-bottom: 15px;">
+        <h3>📊 Живой дашборд телеметрии</h3>
+        <div class="stats-flex">
+          <div><div class="stat-number" id="statTotalQ">23</div><div>Всего вопросов</div></div>
+          <div><div class="stat-number" style="color: #2ecc71;" id="statSessions">12</div><div>Сессий сдано</div></div>
+          <div><div class="stat-number" style="color: #e67e22;" id="statGlobalScore">100</div><div>Глобальные очки</div></div>
+        </div>
+      </div>
+      
+      <div class="admin-card" style="margin-bottom: 15px;">
+        <h3>🎮 Привилегии управления активной сессией</h3>
+        <p style="margin: 5px 0; font-size: 13px; color: #666;">Позволяет влиять на тест в реальном времени:</p>
+        <div class="inline-actions">
+          <button class="btn-warning" onclick="adminModifyLives(1)">➕ Добавить жизнь студенту</button>
+          <button class="btn-danger" style="width:100%" onclick="adminModifyLives(-1)">➖ Отнять жизнь</button>
+        </div>
+        <div class="inline-actions">
+          <button class="btn-danger" style="background:#962d22; width: 100%;" onclick="adminTerminateSession()">🚨 Дистанционно прервать тест игрока</button>
+        </div>
+        <div class="inline-actions" style="margin-top: 10px;">
+          <button class="btn-warning" style="background: #95a5a6; color: white; width: 100%;" onclick="adminResetSystemData()">♻ Полный сброс данных и логов</button>
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <h3>⌨ Системный лог аудита безопасности</h3>
+        <div class="console-log" id="consoleLog">
+          [SYSTEM]: Инициализация базы данных... OK<br>
+          [SYSTEM]: Локальный стек ядра запущен.<br>
+          [AUTH]: Ожидание автоматической авторизации...
+        </div>
+        <button class="btn-success" style="font-size: 12px; padding: 5px; margin-top: 8px;" onclick="addSimulatedLog()">Сгенерировать событие сети</button>
+      </div>
+    </div>
+    
+    <div class="admin-card">
+      <h3>📝 Управление базой вопросов (CRUD)</h3>
+      <select id="adminLevelSelect" onchange="refreshAdminQuestions()">
+        <option value="easy">Легкие вопросы (Easy)</option>
+        <option value="hard">Сложные вопросы (Hard)</option>
+      </select>
+      
+      <div class="q-list-container" id="adminQuestionsList"></div>
+      
+      <div style="margin-top: 10px; border-top: 1px solid #ccc; padding-top: 5px;">
+        <h4 style="margin: 5px 0; font-size: 13px; color: #007bff;">➕ Добавление нового вопроса прямо на защите:</h4>
+        <input type="text" id="newQText" placeholder="Текст вопроса" style="padding: 8px; margin-bottom: 5px; font-size: 14px;">
+        <input type="text" id="newA0" placeholder="Вариант 1 (Неверный)" style="padding: 8px; margin-bottom: 5px; font-size: 14px;">
+        <input type="text" id="newA1" placeholder="Вариант 2 (ПРАВИЛЬНЫЙ!)" style="padding: 8px; margin-bottom: 5px; font-size: 14px;">
+        <input type="text" id="newA2" placeholder="Вариант 3 (Неверный)" style="padding: 8px; margin-bottom: 8px; font-size: 14px;">
+        <button class="btn-success" onclick="addNewQuestionFromAdmin()" style="padding: 8px; font-size: 14px;">Внедрить вопрос в стек игры</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="game" id="startScreen">
+  <h2 id="menuTitle">Цифровая грамотность</h2>
+  <p id="menuSubtitle">Выбери уровень сложности:</p>
+  <button class="easy-btn" id="easyBtn" onclick="startGame('easy')">Легкий уровень</button>
+  <button class="hard-btn" id="hardBtn" onclick="startGame('hard')">Сложный уровень</button>
+  <button class="back-btn" id="backBtn" onclick="goBackToWelcome()">← Назад / Back</button>
+</div>
+
+<div class="game" id="gameScreen">
+  <div class="game-progress-container"><div id="gameProgress" class="game-progress-bar"></div></div>
+  <div class="status-bar">
+    <div id="scoreDisplay" style="position: relative;">Очки: 0</div>
+    <div id="timerDisplay">⏱ 30s</div>
+    <div id="livesDisplay" class="hearts"></div>
+  </div>
+  <div class="timer-bar-container"><div id="timerBar" class="timer-bar"></div></div>
+  <h2 id="gameTitle">Вопрос</h2>
+  <p id="question"></p>
+  <button onclick="checkAnswer(0, this)" id="a0"></button>
+  <button onclick="checkAnswer(1, this)" id="a1"></button>
+  <button onclick="checkAnswer(2, this)" id="a2"></button>
+  <div id="infoBox" class="info-box"></div>
+  
+  <button id="nextBtn" class="next-btn" onclick="goToNextQuestion()">Далее →</button>
+  <button id="surrenderBtn" class="surrender-btn" onclick="triggerSurrender()">🏳 Сдаться / Surrender</button>
+</div>
+
+<div class="game" id="endScreen">
+  <div id="victoryIcon" class="victory-trophy" style="display:none;">🏆</div>
+  <h2 id="endTitle">Результат</h2>
+  <div id="scoreBox" style="font-size: 24px; font-weight: bold; margin: 15px 0;"></div>
+  <p id="endText"></p>
+  <button id="replayBtn" onclick="resetGame()">Играть снова</button>
+</div>
+
+<script>
+const SoundEffects = {
+  ctx: null,
+  init() { if (!this.ctx) { try { const AudioCtx = window.AudioContext || window.webkitAudioContext; if (AudioCtx) this.ctx = new AudioCtx(); } catch (e){} } },
+  play(type) {
+    try {
+      this.init(); if (!this.ctx || this.ctx.state === 'suspended') return; const now = this.ctx.currentTime;
+      if (type === 'click') {
+        const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain(); osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.frequency.setValueAtTime(400, now); gain.gain.setValueAtTime(0.02, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05); osc.start(); osc.stop(now + 0.05);
+      } else if (type === 'correct') {
+        [440, 554, 659].forEach((f, i) => {
+          const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain(); osc.connect(gain); gain.connect(this.ctx.destination);
+          osc.frequency.setValueAtTime(f, now + i*0.05); gain.gain.setValueAtTime(0.04, now + i*0.05); gain.gain.exponentialRampToValueAtTime(0.001, now + i*0.05 + 0.2); osc.start(now + i*0.05); osc.stop(now + i*0.05 + 0.2);
+        });
+      } else if (type === 'wrong') {
+        const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain(); osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.frequency.setValueAtTime(150, now); osc.frequency.linearRampToValueAtTime(80, now + 0.2); gain.gain.setValueAtTime(0.05, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2); osc.start(); osc.stop(now + 0.2);
+      }
+    } catch(e){}
+  }
+};
+
+const uiTexts = {
+  ru: {
+    title: "Цифровая грамотность", subtitle: "Уровень сложности:",
+    easy: "Легкий уровень", hard: "Сложный уровень", gameTitle: "Вопрос ",
+    correctAlert: "<b>Правильно! +5 очков.</b><br>", wrongAlert: "<b>Неправильно! -5 очков.</b><br>",
+    timeOutAlert: "<b>Время вышло! -5 очков.</b><br>",
+    resultTitle: "Успешное завершение! 🎉", resultText: ", отличная демонстрация! Пройдено вопросов: ",
+    gameOver: ", сессия завершена. Жизни исчерпаны 😢", 
+    surrenderedText: ", вы досрочно завершили тестирование (сдались) 🏳",
+    adminTerminatedText: ", ваша сессия была удаленно аннулирована администратором 🚨",
+    replay: "Вернуться в начало", score: "Очков набрано: ", nameAlert: "Введите имя пользователя!", of: " из ", next: "Далее →", back: "← Назад", surrender: "🏳 Сдаться"
+  },
+  en: {
+    title: "Digital Literacy", subtitle: "Select difficulty:",
+    easy: "Easy Level", hard: "Hard Level", gameTitle: "Question ",
+    correctAlert: "<b>Correct! +5 points.</b><br>", wrongAlert: "<b>Incorrect! -5 points.</b><br>",
+    timeOutAlert: "<b>Time's up! -5 points.</b><br>",
+    resultTitle: "Victory! 🎉", resultText: ", great job! Completed: ",
+    gameOver: ", game over! No lives left 😢", 
+    surrenderedText: ", you gave up and left the test early 🏳",
+    adminTerminatedText: ", your session was remotely terminated by the admin 🚨",
+    replay: "Restart application", score: "Score: ", nameAlert: "Enter nickname!", of: " of " , next: "Next →", back: "← Back", surrender: "🏳 Surrender"
+  }
+};
+
+let questionsData = {
+  ru: {
+    easy: [
+      { q: "Что такое фишинг?", a: ["Вид компьютерного вируса", "Обман для кражи личных данных", "Браузерная мини-игра"], correct: 1, info: "Фишинг — это уловка мошенников для кражи паролей через фейковые сайты." },
+      { q: "Какой пароль из предложенных самый надежный?", a: ["123456789", "my_password123", "X$7mP!q9_Z"], correct: 2, info: "Надежный пароль содержит разные регистры букв, цифры и спецсимволы." },
+      { q: "Можно ли скачивать файлы с неизвестных сайтов?", a: ["Да, если очень нужно", "Нет, это большой риск", "Можно, но только картинки"], correct: 1, info: "Скачивание файлов из непроверенных источников грозит заражением вирусами." },
+      { q: "Что нужно делать с подозрительными письмами на почте?", a: ["Сразу открыть и прочесть", "Удалить или проигнорировать", "Переслать всем друзьям"], correct: 1, info: "Подозрительные письма могут содержать опасные ссылки и вирусы." },
+      { q: "Можно ли делиться своим паролем с лучшим другом?", a: ["Да, мы доверяем друг другу", "Нет, пароль должен знать только ты", "Только если друг сильно просит"], correct: 1, info: "Пароль — строго конфиденциальная личная информация." },
+      { q: "Что такое спам?", a: ["Полезная рассылка новостей", "Массовая нежелательная реклама", "Антивирусная программа"], correct: 1, info: "Спам — это массовая рассылка коммерческой рекламы без согласия получателя." },
+      { q: "Какая информация безопасна для публикации в соцсетях?", a: ["Домашний адрес и телефон", "Фотография вашего кота", "Фото билетов на самолет"], correct: 1, info: "Личные данные и билеты публикуют мошенникам на радость. А котики — это безопасно." },
+      { q: "Что делать, если компьютер заблокировался и требует выкуп?", a: ["Заплатить мошенникам", "Обратиться к специалисту", "Разбить монитор"], correct: 1, info: "Выплата выкупа не гарантирует разблокировку. Нужен специалист." },
+      { q: "Для чего нужен антивирус?", a: ["Чтобы компьютер быстрее думал", "Для защиты от вредоносных программ", "Чтобы скачивать платные игры"], correct: 1, info: "Антивирус находит, блокирует и удаляет вредоносный код." },
+      { q: "Что такое кибербуллинг?", a: ["Травля и оскорбления в интернете", "Быстрый набор текста на скорость", "Покупка вещей в онлайн-играх"], correct: 0, info: "Кибербуллинг — это преднамеренное оскорбление и издевательство в сети." },
+      { q: "Безопасно ли покупать товары в интернет-магазине через общественный Wi-Fi?", a: ["Да, Wi-Fi везде одинаковый", "Нет, данные карты могут перехватить", "Да, если покупка недорогая"], correct: 1, info: "Открытые общественные сети не шифруют данные, они уязвимы для перехвата." },
+      { q: "Что означает 'цифровой след'?", a: ["Информация, которую вы оставляете в сети", "Рисунок пальцем на экране планшета", "Количество шагов в фитнес-трекере"], correct: 0, info: "Всё, что вы лайкаете, постите и ищете, формирует ваш цифровой след." },
+      { q: "Как расшифровывается ПК?", a: ["Программный Комплекс", "Персональный Компьютер", "Правильный Контент"], correct: 1, info: "ПК традиционно расшифровывается как Персональный Компьютер." },
+      { q: "Что из этого является браузером?", a: ["Google Chrome", "Adobe Photoshop", "Windows 11"], correct: 0, info: "Chrome — это программа для просмотра веб-страниц (браузер)." },
+      { q: "Где лучше всего хранить важные резервные копии файлов?", a: ["В корзине на рабочем столе", "На флешке или в облачном хранилище", "Написать их текст на бумаге"], correct: 1, info: "Облака и внешние накопители спасут файлы, если компьютер сломается." }
+    ],
+    hard: [
+      { q: "Что делает двухфакторная аутентификация (2FA)?", a: ["Ускоряет загрузку сайтов", "Требует дополнительный код при входе", "Очищает кэш браузера"], correct: 1, info: "2FA защищает аккаунт, даже если злоумышленник узнал ваш пароль." },
+      { q: "Какой протокол шифрует трафик в браузере?", a: ["HTTP", "HTTPS", "FTP"], correct: 1, info: "HTTPS (буква S — Secure) обеспечивает безопасное зашифрованное соединение." },
+      { q: "Что такое социальная инженерия?", a: ["Психологический обман для кражи данных", "Настройка таргетированной рекламы", "Создание роботов-помощников"], correct: 0, info: "Это метод, основанный на манипуляции человеческими слабостями и доверием." },
+      { q: "Что скрывается под термином дипфейк (Deepfake)?", a: ["Очень старая веб-страница", "Подделка видео/аудио с помощью ИИ", "Глубокая очистка системы от вирусов"], correct: 1, info: "Дипфейки используют нейросети для замены лиц и голосов на медиафайлах." },
+      { q: "Что такое Ransomware (вирус-вымогатель)?", a: ["Программа для показа рекламы", "Вирус, который шифрует файлы и требует деньги", "Утилита, ускоряющая видеокарту"], correct: 1, info: "Оно блокирует доступ к файлам, требуя выкуп за ключ дешифрования." },
+      { q: "Какая атака называется MITM (Man-in-the-Middle)?", a: ["Взлом через подбор паролей", "Перехват данных между пользователем и сайтом", "Физическая кража ноутбука"], correct: 1, info: "При атаке 'Человек посередине' хакер тайно ретранслирует и изменяет связь сторон." },
+      { q: "Что такое VPN?", a: ["Виртуальная частная сеть для защиты трафика", "Программа для создания сайтов", "Вирусная база данных"], correct: 0, info: "VPN шифрует твое интернет-соединение и скрывает твой реальный IP-адрес." },
+      { q: "Для чего используется менеджер паролей?", a: ["Чтобы делиться паролями с коллегами", "Для генерации и безопасного хранения паролей", "Чтобы взламывать чужие аккаунты"], correct: 1, info: "Менеджер надежно шифрует базу ваших сложных паролей под одним мастер-паролем." }
+    ]
+  },
+  en: { easy: [], hard: [] }
+};
+
+questionsData.en.easy = JSON.parse(JSON.stringify(questionsData.ru.easy));
+questionsData.en.hard = JSON.parse(JSON.stringify(questionsData.ru.hard));
+
+let currentLanguage = 'ru'; let questions = []; let current = 0; let score = 0; let lives = 3; let nickname = "Player";
+let timeLeft = 30; let timerId = null; let canClick = true;
+
+// Флаг для отслеживания удаленной блокировки сессии
+let isTerminatedByAdmin = false;
+
+function revealSecretAdmin() {
+  const block = document.getElementById("secretRoleBlock");
+  block.style.display = (block.style.display === "none") ? "block" : "none";
+}
+
+// Управление видимостью полей ввода логина/пароля в зависимости от радиокнопки
+function toggleAuthFields() {
+  const role = document.querySelector('input[name="userRole"]:checked').value;
+  const authInputs = document.getElementById("adminAuthInputs");
+  if (role === 'admin') {
+    authInputs.style.display = "block";
+  } else {
+    authInputs.style.display = "none";
+    document.getElementById("authErrorMsg").style.display = "none";
+  }
+}
+
+// Переключение видимости символов пароля (глаз)
+function togglePasswordVisibility() {
+  const passInput = document.getElementById("adminPasswordInput");
+  if (passInput.type === "password") {
+    passInput.type = "text";
+  } else {
+    passInput.type = "password";
+  }
+}
+
+function logToConsole(text, type = 'INFO') {
+  const consoleEl = document.getElementById("consoleLog");
+  if (consoleEl) {
+    const now = new Date().toLocaleTimeString();
+    consoleEl.innerHTML += `<br>[${now}] [${type}]: ${text}`;
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+  }
+}
+
+function selectLanguage(lang) {
+  const inputVal = document.getElementById("nicknameInput").value.trim();
+  if (!inputVal) { alert(uiTexts[lang].nameAlert); return; }
+  nickname = inputVal; currentLanguage = lang;
+
+  const roleRadio = document.querySelector('input[name="userRole"]:checked');
+  const selectedRole = roleRadio ? roleRadio.value : 'student';
+  
+  if (selectedRole === 'admin') {
+    const loginVal = document.getElementById("adminLoginInput").value.trim();
+    const passVal = document.getElementById("adminPasswordInput").value;
+    const errorEl = document.getElementById("authErrorMsg");
+
+    // ПРОВЕРКА УЧЕТНЫХ ДАННЫХ АДМИНИСТРАТОРА
+    if (loginVal === "kanat2007" && passVal === "kanat20077002") {
+      errorEl.style.display = "none";
+      SoundEffects.play('click');
+      document.getElementById("langScreen").style.display = "none";
+      document.getElementById("adminScreen").style.display = "block";
+      refreshAdminQuestions();
+      logToConsole(`Администратор ${nickname} успешно вошел. Стек privileges: ROOT.`, 'AUTH');
+    } else {
+      SoundEffects.play('wrong');
+      errorEl.innerText = "❌ Неверный логин или пароль!";
+      errorEl.style.display = "block";
+    }
+    return; 
+  }
+
+  // Если выбран учащийся (student) — запускаем сразу дальше без проверок
+  goToDifficultyMenu();
+}
+
+function goToDifficultyMenu() {
+  const lang = currentLanguage;
+  document.getElementById("menuTitle").innerText = uiTexts[lang].title;
+  document.getElementById("menuSubtitle").innerText = uiTexts[lang].subtitle;
+  document.getElementById("easyBtn").innerText = uiTexts[lang].easy + " (" + questionsData[lang].easy.length + ")";
+  document.getElementById("hardBtn").innerText = uiTexts[lang].hard + " (" + questionsData[lang].hard.length + ")";
+  document.getElementById("backBtn").innerText = uiTexts[lang].back;
+  
+  document.getElementById("langScreen").style.display = "none";
+  document.getElementById("adminScreen").style.display = "none";
+  document.getElementById("startScreen").style.display = "block";
+  SoundEffects.play('click');
+}
+
+function goBackToWelcome() {
+  SoundEffects.play('click');
+  document.getElementById("startScreen").style.display = "none";
+  document.getElementById("langScreen").style.display = "block";
+}
+
+function exitAdminToMain() {
+  document.querySelector('input[name="userRole"][value="student"]').checked = true;
+  document.getElementById("adminLoginInput").value = "";
+  document.getElementById("adminPasswordInput").value = "";
+  document.getElementById("adminPasswordInput").type = "password";
+  document.getElementById("secretRoleBlock").style.display = "none";
+  toggleAuthFields();
+  goToDifficultyMenu();
+}
+
+function refreshAdminQuestions() {
+  const level = document.getElementById("adminLevelSelect").value;
+  const listContainer = document.getElementById("adminQuestionsList");
+  const qArray = questionsData[currentLanguage][level];
+  
+  document.getElementById("statTotalQ").innerText = questionsData[currentLanguage].easy.length + questionsData[currentLanguage].hard.length;
+
+  listContainer.innerHTML = "";
+  qArray.forEach((item, index) => {
+    const div = document.createElement("div");
+    div.className = "q-list-item";
+    div.innerHTML = `
+      <span><b>${index+1}.</b> ${item.q.substring(0, 40)}...</span>
+      <button class="btn-danger" onclick="deleteQuestion(${index}, '${level}')">Удалить</button>
+    `;
+    listContainer.appendChild(div);
+  });
+}
+
+function deleteQuestion(index, level) {
+  questionsData['ru'][level].splice(index, 1);
+  questionsData['en'][level].splice(index, 1);
+  logToConsole(`Вопрос №${index+1} из [${level}] успешно удален через CRUD-модуль.`, 'DELETE');
+  refreshAdminQuestions();
+}
+
+function adminModifyLives(amount) {
+  if (document.getElementById("gameScreen").style.display !== "block") {
+    alert("Операция отклонена: Изменение структуры возможно только во время активного теста студента!");
+    return;
+  }
+  lives += amount;
+  if(lives > 3) lives = 3;
+  if(lives < 0) lives = 0;
+  
+  const container = document.getElementById("livesDisplay");
+  container.innerHTML = "";
+  for(let i=0; i<3; i++) {
+    const span = document.createElement("span");
+    span.innerText = "♥";
+    if(i >= lives) span.className = "broken";
+    container.appendChild(span);
+  }
+  
+  logToConsole(`Администратор изменил жизни текущей сессии на: ${lives}`, 'OVERRIDE');
+  if (lives <= 0) {
+    triggerEpicGameOver('dead');
+  }
+}
+
+function adminTerminateSession() {
+  if (document.getElementById("gameScreen").style.display !== "block") {
+    alert("Операция отклонена: Нет активных сессий для принудительного сброса.");
+    return;
+  }
+  logToConsole(`Вызвана директива принудительного прерывания сессии игрока.`, 'SECURITY');
+  triggerEpicGameOver('admin_terminate');
+}
+
+function adminResetSystemData() {
+  if(confirm("Вы уверены, что хотите сбросить глобальные счетчики системы?")) {
+    score = 0;
+    document.getElementById("statSessions").innerText = "0";
+    document.getElementById("statGlobalScore").innerText = "0";
+    document.getElementById("consoleLog").innerHTML = "[SYSTEM]: Проведена полная очистка буфера ядра и логов аудита.";
+    logToConsole("Система успешно реинициализирована.", "RESET");
+    alert("База данных сессий сброшена!");
+  }
+}
+
+function addNewQuestionFromAdmin() {
+  const text = document.getElementById("newQText").value.trim();
+  const a0 = document.getElementById("newA0").value.trim();
+  const a1 = document.getElementById("newA1").value.trim();
+  const a2 = document.getElementById("newA2").value.trim();
+  const level = document.getElementById("adminLevelSelect").value;
+
+  if(!text || !a0 || !a1 || !a2) {
+    alert("Заполните все поля для создания вопроса!");
+    return;
+  }
+
+  const newObj = {
+    q: text,
+    a: [a0, a1, a2],
+    correct: 1, 
+    info: "Этот вопрос был успешно сгенерирован и внедрен администратором динамически во время защиты."
+  };
+
+  questionsData.ru[level].unshift(newObj);
+  questionsData.en[level].unshift(newObj);
+  
+  logToConsole(`Внедрен новый вопрос: "${text.substring(0, 20)}..." в категорию [${level}].`, 'INSERT');
+  
+  document.getElementById("newQText").value = "";
+  document.getElementById("newA0").value = "";
+  document.getElementById("newA1").value = "";
+  document.getElementById("newA2").value = "";
+  
+  refreshAdminQuestions();
+  alert("Успешно! Вопрос внедрён в глобальный стек. Он появится первым при запуске теста.");
+}
+
+function addSimulatedLog() {
+  const mockNames = ["Студент_Казаков", "Анна_ИСП", "Тест_ВКР", "Юзер_Аноним"];
+  const randomName = mockNames[Math.floor(Math.random() * mockNames.length)];
+  const status = Math.random() > 0.4 ? "Верный выбор (+5)" : "Ошибка (-5)";
+  logToConsole(`Сетевой пакет от ${randomName}: ${status}`, 'NETWORK');
+  
+  let sess = parseInt(document.getElementById("statSessions").innerText);
+  document.getElementById("statSessions").innerText = sess + 1;
+}
+
+function startGame(level) {
+  SoundEffects.play('click'); 
+  questions = [...questionsData[currentLanguage][level]]; 
+  current = 0; score = 0; lives = 3; canClick = true;
+  isTerminatedByAdmin = false;
+  
+  if(questions.length === 0) {
+    alert("Ошибка: Стек выбранной сложности пуст!");
+    resetGame();
+    return;
+  }
+
+  const gameCard = document.getElementById("gameScreen"); 
+  gameCard.className = "game"; 
+  document.body.className = "";
+  
+  const container = document.getElementById("livesDisplay"); 
+  container.className = "hearts"; 
+  container.innerHTML = "<span>♥</span><span>♥</span><span>♥</span>";
+  
+  updateStatusBar(); 
+  document.getElementById("startScreen").style.display = "none"; 
+  document.getElementById("endScreen").style.display = "none";
+  gameCard.style.display = "block"; 
+  loadQuestion();
+}
+
+function updateStatusBar() { 
+  document.getElementById("scoreDisplay").innerText = uiTexts[currentLanguage].score + score; 
+  document.getElementById("statGlobalScore").innerText = score;
+}
+
+function loadQuestion() {
+  const lang = currentLanguage;
+  document.getElementById("gameTitle").innerText = uiTexts[lang].gameTitle + (current + 1) + uiTexts[lang].of + questions.length;
+  document.getElementById("nextBtn").innerText = uiTexts[lang].next;
+  document.getElementById("surrenderBtn").innerText = uiTexts[lang].surrender;
+  document.getElementById("infoBox").style.display = "none"; 
+  document.getElementById("nextBtn").style.display = "none"; 
+  canClick = true;
+  
+  for(let i=0; i<3; i++) { const btn = document.getElementById("a" + i); btn.className = ""; btn.style.backgroundColor = "#4facfe"; }
+  const progressPercent = (current / questions.length) * 100; document.getElementById("gameProgress").style.width = progressPercent + "%";
+  
+  document.getElementById("question").innerText = questions[current].q;
+  document.getElementById("a0").innerText = questions[current].a[0]; 
+  document.getElementById("a1").innerText = questions[current].a[1]; 
+  document.getElementById("a2").innerText = questions[current].a[2];
+  startTimer();
+}
+
+function startTimer() {
+  clearInterval(timerId); timeLeft = 30;
+  const display = document.getElementById("timerDisplay"); const bar = document.getElementById("timerBar");
+  display.innerText = "⏱ " + timeLeft + "s"; display.className = ""; bar.style.width = "100%"; bar.style.backgroundColor = "#2ecc71";
+  timerId = setInterval(() => {
+    timeLeft--; display.innerText = "⏱ " + timeLeft + "s"; bar.style.width = (timeLeft / 30 * 100) + "%";
+    if (timeLeft <= 5) { display.className = "timer-panic"; bar.style.backgroundColor = "#e74c3c"; }
+    if (timeLeft <= 0) { clearInterval(timerId); handleTimeOut(); }
+  }, 1000);
+}
+
+function handleTimeOut() {
+  if (!canClick) return; canClick = false; SoundEffects.play('wrong');
+  const lang = currentLanguage; const gameCard = document.getElementById("gameScreen"); const infoBox = document.getElementById("infoBox");
+  score -= 5; lives--; removeHeartVisual(); gameCard.classList.add("wrong-flash"); updateStatusBar();
+  for(let i = 0; i < 3; i++) { document.getElementById("a" + i).classList.add("fade-out-btn"); }
+  infoBox.className = "info-box wrong"; infoBox.innerHTML = uiTexts[lang].timeOutAlert + questions[current].info; infoBox.style.display = "block";
+  document.getElementById("nextBtn").style.display = "block";
+}
+
+function checkAnswer(index, clickedButton) {
+  if (!canClick) return; canClick = false; clearInterval(timerId);
+  const lang = currentLanguage; const gameCard = document.getElementById("gameScreen"); const infoBox = document.getElementById("infoBox");
+  for(let i = 0; i < 3; i++) { const btn = document.getElementById("a" + i); if(btn !== clickedButton) btn.classList.add("fade-out-btn"); }
+  
+  if (index === questions[current].correct) {
+    SoundEffects.play('correct'); score += 5; clickedButton.style.backgroundColor = "#2ecc71";
+    gameCard.classList.add("correct-flash"); updateStatusBar(); infoBox.className = "info-box correct"; infoBox.innerHTML = uiTexts[lang].correctAlert + questions[current].info;
+  } else {
+    SoundEffects.play('wrong'); score -= 5; lives--; removeHeartVisual(); clickedButton.style.backgroundColor = "#e74c3c";
+    gameCard.classList.add("wrong-flash"); updateStatusBar(); infoBox.className = "info-box wrong"; infoBox.innerHTML = uiTexts[lang].wrongAlert + questions[current].info;
+  }
+  infoBox.style.display = "block"; document.getElementById("nextBtn").style.display = "block";
+}
+
+function removeHeartVisual() {
+  const hearts = document.querySelectorAll("#livesDisplay span:not(.broken)");
+  if(hearts.length > 0) { hearts[hearts.length - 1].classList.add("broken"); }
+}
+
+function goToNextQuestion() {
+  const gameCard = document.getElementById("gameScreen"); gameCard.classList.remove("correct-flash", "wrong-flash");
+  if (lives <= 0) { 
+    triggerEpicGameOver('dead'); 
+  } else { 
+    current++; 
+    if (current < questions.length) loadQuestion(); else endGame('victory'); 
+  }
+}
+
+function triggerSurrender() {
+  clearInterval(timerId);
+  SoundEffects.play('wrong');
+  triggerEpicGameOver('surrender');
+}
+
+function triggerEpicGameOver(reason = 'dead') {
+  clearInterval(timerId);
+  const gameCard = document.getElementById("gameScreen");
+  gameCard.classList.add("epic-game-over"); 
+  document.body.classList.add("game-over-flash");
+  
+  setTimeout(() => {
+    if (reason === 'admin_terminate') {
+      isTerminatedByAdmin = true;
+    }
+    endGame(reason);
+  }, 800);
+}
+
+function endGame(status) {
+  clearInterval(timerId); 
+  const lang = currentLanguage; 
+  const endCard = document.getElementById("endScreen"); 
+  const trophy = document.getElementById("victoryIcon");
+  
+  document.getElementById("gameScreen").style.display = "none"; 
+  endCard.style.display = "block";
+  
+  if (status === 'surrender') {
+    trophy.style.display = "none"; 
+    document.getElementById("endTitle").innerText = lang === 'ru' ? "Тест прерван" : "Test Terminated";
+    document.getElementById("scoreBox").innerText = uiTexts[lang].score + score;
+    document.getElementById("endText").innerText = nickname + uiTexts[lang].surrenderedText;
+  } else if (status === 'admin_terminate' || isTerminatedByAdmin) {
+    trophy.style.display = "none"; 
+    document.getElementById("endTitle").innerText = lang === 'ru' ? "Сброс доступа" : "Access Revoked";
+    document.getElementById("scoreBox").innerText = uiTexts[lang].score + score;
+    document.getElementById("endText").innerText = nickname + uiTexts[lang].adminTerminatedText;
+  } else if (status === 'dead' || lives <= 0) {
+    trophy.style.display = "none"; 
+    document.getElementById("endTitle").innerText = lang === 'ru' ? "Сессия окончена" : "Session Ended";
+    document.getElementById("scoreBox").innerText = uiTexts[lang].score + score;
+    document.getElementById("endText").innerText = nickname + uiTexts[lang].gameOver;
+  } else {
+    trophy.style.display = "inline-block"; 
+    endCard.classList.add("victory-card"); 
+    document.getElementById("endTitle").innerText = uiTexts[lang].resultTitle;
+    document.getElementById("scoreBox").innerText = uiTexts[lang].score + score;
+    document.getElementById("endText").innerText = nickname + uiTexts[lang].resultText + questions.length;
+  }
+  
+  let sess = parseInt(document.getElementById("statSessions").innerText);
+  document.getElementById("statSessions").innerText = sess + 1;
+}
+
+function resetGame() {
+  document.getElementById("endScreen").className = "game"; document.getElementById("endScreen").style.display = "none";
+  document.getElementById("langScreen").style.display = "block";
+}
+</script></body></html>
